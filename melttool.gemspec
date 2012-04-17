@@ -1,5 +1,3 @@
-require 'melttool'
-
 Gem::Specification.new do |s|
   s.name = "melttool"
   s.version = "0.0.1"
