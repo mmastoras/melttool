@@ -9,11 +9,11 @@ Gem::Specification.new do |s|
   s.description = 'The Melt deployment tool'
   s.files = [
     "Gemfile",
-    "meltool.gemspec",
+    "melttool.gemspec",
     "README.md",
     "bin/mt"
     ]
-  s.executables = ["bin/mt"]
+  s.executables = ["mt"]
 
   
   s.add_dependency "engineyard"
