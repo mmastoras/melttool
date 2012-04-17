@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.summary = 'The Melt deployment tool'
   s.description = 'This gems allows you to deploy The Melt EngineYard environments'
   
-  s.files = Dir.glob("{bin}/**/*") + %w(README.md)
+  s.files = Dir.glob("{bin,lib}/**/*") + %w(README.md)
   s.executables = ["mt"]
   s.default_executable = "mt"
   
