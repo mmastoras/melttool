@@ -1,6 +1,8 @@
+require 'melttool'
+
 Gem::Specification.new do |s|
   s.name = "melttool"
-  s.version = "0.0.1"
+  s.version = Melttool::VERSION
   s.date = %q{2012-04-17}
   s.authors = ['Mark Mastoras']
   s.email = ['mmastoras@dprails.com']
@@ -11,6 +13,7 @@ Gem::Specification.new do |s|
   s.files = Dir.glob("{bin,lib}/**/*") + %w(README.md)
   s.executables = ["mt"]
   s.default_executable = "mt"
+  s.require_paths = ['lib']
   
   s.add_dependency("engineyard", "~>1.4.27")
   s.add_dependency("trollop")
