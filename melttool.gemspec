@@ -1,13 +1,19 @@
 Gem::Specification.new do |s|
   s.name = "melttool"
   s.version = "0.0.1"
+  s.date = %q{2012-04-17}
   s.authors = ['Mark Mastoras']
   s.email = ['mmastoras@dprails.com']
   s.homepage = 'http://themelt.com'
   s.summary = 'The Melt deployment tool'
   s.description = 'The Melt deployment tool'
-  s.files = `git ls-files`.split("\n")
-  s.executables = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
+  s.files = [
+    "Gemfile",
+    "meltool.gemspec",
+    "README.md",
+    "bin/mt"
+    ]
+  s.executables = ["bin/mt"]
 
   
   s.add_dependency "engineyard"
