@@ -1,3 +1,5 @@
+require 'melttool'
+
 Gem::Specification.new do |s|
   s.name = "melttool"
   s.version = "0.0.1"
@@ -6,17 +8,13 @@ Gem::Specification.new do |s|
   s.email = ['mmastoras@dprails.com']
   s.homepage = 'http://themelt.com'
   s.summary = 'The Melt deployment tool'
-  s.description = 'The Melt deployment tool'
-  s.files = [
-    "Gemfile",
-    "melttool.gemspec",
-    "README.md",
-    "bin/mt"
-    ]
-  s.executables = ["mt"]
-
+  s.description = 'This gems allows you to deploy The Melt EngineYard environments'
   
-  s.add_dependency "engineyard"
-  s.add_dependency "trollop"
+  s.files = Dir.glob("{bin}/**/*") + %w(README.md)
+  s.executables = ["ey"]
+  s.default_executable = "ey"
+  
+  s.add_dependency("engineyard", "~>1.4.27")
+  s.add_dependency("trollop")
 end
 
