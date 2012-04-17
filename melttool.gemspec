@@ -9,8 +9,8 @@ Gem::Specification.new do |s|
   s.description = 'This gems allows you to deploy The Melt EngineYard environments'
   
   s.files = Dir.glob("{bin}/**/*") + %w(README.md)
-  s.executables = ["ey"]
-  s.default_executable = "ey"
+  s.executables = ["mt"]
+  s.default_executable = "mt"
   
   s.add_dependency("engineyard", "~>1.4.27")
   s.add_dependency("trollop")
