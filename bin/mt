@@ -5,14 +5,14 @@ require 'trollop'
 
 SUB_COMMANDS = %w(deploy status ssh environments)
 $global_opts = Trollop::options do
-  version "mt 0.0.1 (c) TheMelt"
+  version "mt 0.0.2 (c) TheMelt"
   banner <<-EOS
 Usage:
  mt COMMAND [ARGS]
  Commands:
   mt deploy -e <environment> -a <application> -m (run migrations)
   mt status -e <environment> -a <application>
-  mt ssh -e <environment>
+  mt ssh -e <environment> -a <application> -n <instance>
 EOS
   
   banner "Melttool for deploying to melt environments"
@@ -25,6 +25,7 @@ cmd_opts = case cmd
     Trollop::options do
       opt :app, "Which appliction, e.g. mobile or web", :short => "-a", :type => :string
       opt :env, "rails env, e.g. preview", :short => "-e", :type => :string
+      opt :instance, "instance, e.g web1", :short => "-n", :type => :string
     end
   when "status" # parse status opts
     Trollop::options do
@@ -67,29 +68,70 @@ def translate_env(env)
     ey_env
 end
 
-def translate_app(app)
+def translate_app(env, app)
   ey_app = case app
     when "web", "desktop"
-      "themelt_web_staging"
+      env == 'production' ? "themelt_mobile" : "themelt_web_staging"
     when "mobile"
-      "themelt_mobile_staging"
+      env == 'production' ? "themelt_web" : "themelt_mobile_staging"
     else
       Trollop::die "Unknown application #{app}"
     end
-    ey_app
 end
-       
+
+def is_ey(app)
+  app == 'ma' ? false : true
+end
+
+MA_HOSTS = {'production' => {'web1' => '10.86.49.67', 'web2' => '10.86.49.68', 'db' => '10.86.48.64'}, 'staging' => {'web' => '10.86.50.65', 'db' => '10.86.50.66'}}
+
+def ma_ssh(env, instance)
+  ma_host = MA_HOSTS[env][instance]
+  Trollop::die "invalid instance '#{instance}' for '#{env}'" if ma_host.nil?
+  puts "ssh #{ma_host}"
+#  system "ssh #{ma_host}"
+end 
+
+def ma_status
+  Trollop::die "not implemented"
+end
+
+def ma_deploy
+  Trollop::die "not implemented"
+end
+
+def ey_ssh(env)
+  system "ey ssh -e #{translate_env(env)}"
+end
+
+def ey_status(env, app) 
+  system "ey status -e #{translate_env(env)} -a #{translate_app(env, app)}"
+end
+
+def ey_deploy(env, app, branch, migrate)
+  cmd = "ey deploy -e #{translate_env(env)} -a #{translate_app(env, app)} -r #{branch}"
+  cmd += " -m" if migrate == true
+  if env == 'production'
+    puts "About to deploy to branch #{branch} to production. Are you sure? (y/n)"
+    c = gets.chomp.downcase
+    unless c == "y"
+      puts "exiting w/o deploying"
+      return
+    end
+  end
+  system cmd 
+end
+
+    
 case cmd
 when "-h"
   
 when "ssh"
-  system "ey ssh -e #{translate_env(cmd_opts.env)}"
+  is_ey(cmd_opts.app) ? ey_ssh(cmd_opts.env) : ma_ssh(cmd_opts.env, cmd_opts.instance)
 when "status"
-  system "ey status -e #{translate_env(cmd_opts.env)} -a #{translate_app(cmd_opts.app)}"
+  is_ey(cmd_opts.app) ? ey_status(cmd_opts.env, cmd_opts.app) : ma_status
 when "deploy"
-  cmd = "ey deploy -e #{translate_env(cmd_opts.env)} -a #{translate_app(cmd_opts.app)} -r #{cmd_opts.branch}"
-  cmd += " -m" if cmd_opts.migrate == true 
-  system cmd 
+  is_ey(cmd_opts.app) ? ey_deploy(cmd_opts.env, cmd_opts.app, cmd_opts.branch, cmd_opts.migrate) : ma_deploy
 when "environment"
   puts "TheMelt (production)"
   puts "  Web: http://themelt.com"
@@ -106,4 +148,8 @@ when "environment"
   puts "TheMelt (preview2)"
   puts "  Web: http://preview2.themelt.com"
   puts "  Mobile: http://previewmob2.themelt.com"
+  puts "Munchaway services (production)"
+  puts "  http://admin.fishsixrc.com"
+  puts "Munchaway services (staging)"
+  puts "  http://betadmin.fishsixrc.com"
 end

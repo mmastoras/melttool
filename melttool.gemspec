@@ -6,7 +6,7 @@ require 'melttool'
 Gem::Specification.new do |s|
   s.name = "melttool"
   s.version = Melttool::VERSION
-  s.date = %q{2012-04-17}
+  s.date = %q{2012-04-24}
   s.authors = ['Mark Mastoras']
   s.email = ['mmastoras@dprails.com']
   s.homepage = 'http://themelt.com'
