@@ -97,6 +97,7 @@ end
 
 def ma_deploy(env)
   Trollop::die "missing CapFile, must be in RAILS_ROOT of munchaway services repo" unless File.exists?('Capfile')
+  system "ssh-add"
   system "cap #{env} deploy"
 end
 
