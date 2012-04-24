@@ -88,8 +88,7 @@ MA_HOSTS = {'production' => {'web1' => '10.86.49.67', 'web2' => '10.86.49.68', '
 def ma_ssh(env, instance)
   ma_host = MA_HOSTS[env][instance]
   Trollop::die "invalid instance '#{instance}' for '#{env}'" if ma_host.nil?
-  puts "ssh #{ma_host}"
-#  system "ssh #{ma_host}"
+  system "ssh #{ma_host}"
 end 
 
 def ma_status
