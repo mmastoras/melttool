@@ -95,10 +95,14 @@ def ma_status
   Trollop::die "not implemented"
 end
 
-def ma_deploy(env)
+def ma_deploy(env,branch)
   Trollop::die "missing CapFile, must be in RAILS_ROOT of munchaway services repo" unless File.exists?('Capfile')
   system "ssh-add"
-  system "cap #{env} deploy"
+  if branch.nil? or branch.empty?
+    system "cap #{env} deploy"
+  else
+    system "cap -S branch=#{branch} #{env} deploy"
+  end
 end
 
 def ey_ssh(env)
@@ -132,7 +136,7 @@ when "ssh"
 when "status"
   is_ey(cmd_opts.app) ? ey_status(cmd_opts.env, cmd_opts.app) : ma_status
 when "deploy"
-  is_ey(cmd_opts.app) ? ey_deploy(cmd_opts.env, cmd_opts.app, cmd_opts.branch, cmd_opts.migrate) : ma_deploy(cmd_opts.env)
+  is_ey(cmd_opts.app) ? ey_deploy(cmd_opts.env, cmd_opts.app, cmd_opts.branch, cmd_opts.migrate) : ma_deploy(cmd_opts.env, cmd_opts.branch)
 when "environment"
   puts "TheMelt (production)"
   puts "  Web: http://themelt.com"
