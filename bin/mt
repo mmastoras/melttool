@@ -3,9 +3,9 @@
 require 'engineyard'
 require 'trollop'
 
-SUB_COMMANDS = %w(deploy status ssh environments)
+SUB_COMMANDS = %w(deploy status ssh environments reload restart)
 $global_opts = Trollop::options do
-  version "mt 0.0.2 (c) TheMelt"
+  version "mt 0.0.4 (c) TheMelt"
   banner <<-EOS
 Usage:
  mt COMMAND [ARGS]
@@ -13,6 +13,8 @@ Usage:
   mt deploy -e <environment> -a <application> -m (run migrations)
   mt status -e <environment> -a <application>
   mt ssh -e <environment> -a <application> -n <instance>
+  mt reload -e <environment> -a <application>
+  mt restart -e <environemnt> -a <application>
 EOS
   
   banner "Melttool for deploying to melt environments"
@@ -39,6 +41,16 @@ cmd_opts = case cmd
       opt :migrate, "run migrations", :short => "-m"
       opt :branch, "Choose a git branch", :short => "-r", :default => 'master'
     end
+  when "reload"
+    Trollop::options do
+      opt :app, "Which appliction, e.g. mobile or web", :short => "-a", :type => :string
+      opt :env, "rails env, e.g. preview", :short => "-e", :type => :string
+    end    
+  when "restart"
+    Trollop::options do
+      opt :app, "Which appliction, e.g. mobile or web", :short => "-a", :type => :string
+      opt :env, "rails env, e.g. preview", :short => "-e", :type => :string
+    end    
   when "environments"
   else
     Trollop::die "Unkown command #{cmd.inspect}"
@@ -127,7 +139,31 @@ def ey_deploy(env, app, branch, migrate)
   system cmd 
 end
 
-    
+def restart(env, app)
+  case env
+    when 'beta', 'staging', 'production'
+      system "ey ssh -e #{translate_env(env)} 'sudo /etc/init.d/nginx restart'" 
+      if env == 'production' #total hack to restart app2
+        system "ssh deploy@ec2-50-18-83-188.us-west-1.compute.amazonaws.com 'sudo /etc/init.d/nginx restart'"
+      end             
+    when 'preview', 'preview2'
+      system "ey ssh -e #{translate_env(env)} 'LANG=\"en_US.UTF-8\" /engineyard/bin/app_#{translate_app(env, app)} deploy'"
+  end  
+end
+
+# clear cache and restart
+def reload(env, app)
+  system "ey ssh -e #{translate_env(env)} 'rm -rf /data/#{translate_app(env,app)}/current/tmp/cache/*'" # clear out cache
+  if env == 'production' # total hack to clear cache on app2
+    system "ssh deploy@ec2-50-18-83-188.us-west-1.compute.amazonaws.com 'rm -rf /data/#{translate_app(env,app)}/current/tmp/cache/*'"
+  end
+  restart(env, app)
+end
+
+def not_available(cmd, app)
+  puts "#{cmd} not available for #{translate_app(env, app)}"
+end
+
 case cmd
 when "-h"
   
@@ -137,6 +173,10 @@ when "status"
   is_ey(cmd_opts.app) ? ey_status(cmd_opts.env, cmd_opts.app) : ma_status
 when "deploy"
   is_ey(cmd_opts.app) ? ey_deploy(cmd_opts.env, cmd_opts.app, cmd_opts.branch, cmd_opts.migrate) : ma_deploy(cmd_opts.env, cmd_opts.branch)
+when "reload"
+  is_ey(cmd_opts.app) ? reload(cmd_opts.env, cmd_opts.app) : not_available(cmd, cmd_ops.app)
+when "restart"
+  is_ey(cmd_opts.app) ? restart(cmd_opts.env, cmd_opts.app) : not_available(cmd, cmd_ops.app)
 when "environment"
   puts "TheMelt (production)"
   puts "  Web: http://themelt.com"
