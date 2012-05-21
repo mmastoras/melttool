@@ -3,7 +3,7 @@
 require 'engineyard'
 require 'trollop'
 
-SUB_COMMANDS = %w(deploy status ssh environments reload restart)
+SUB_COMMANDS = %w(deploy status ssh environments reload restart chefrun)
 $global_opts = Trollop::options do
   version "mt 0.0.4 (c) TheMelt"
   banner <<-EOS
@@ -15,6 +15,7 @@ Usage:
   mt ssh -e <environment> -a <application> -n <instance>
   mt reload -e <environment> -a <application>
   mt restart -e <environemnt> -a <application>
+  mt chefrun -e <environment> -c <upload|apply>
 EOS
   
   banner "Melttool for deploying to melt environments"
@@ -51,6 +52,11 @@ cmd_opts = case cmd
       opt :app, "Which appliction, e.g. mobile or web", :short => "-a", :type => :string
       opt :env, "rails env, e.g. preview", :short => "-e", :type => :string
     end    
+  when "chefrun"
+    Trollop::options do
+      opt :env, "rails env, e.g. preview", :short => "-e", :type => :string
+      opt :cmd, "chef command, e.g. upload or apply", :short => "-c", :type => :string
+    end        
   when "environments"
   else
     Trollop::die "Unkown command #{cmd.inspect}"
@@ -160,6 +166,15 @@ def reload(env, app)
   restart(env, app)
 end
 
+def chefrun(env, app, cmd)
+  case cmd
+    when 'upload'
+      system "ey recipes upload -e #{translate_env(env)}"
+    when 'apply'
+      system "ey recipes apply -e #{translate_env(env)}"
+  end
+end
+
 def not_available(cmd, app)
   puts "#{cmd} not available for #{translate_app(env, app)}"
 end
@@ -177,7 +192,9 @@ when "reload"
   is_ey(cmd_opts.app) ? reload(cmd_opts.env, cmd_opts.app) : not_available(cmd, cmd_ops.app)
 when "restart"
   is_ey(cmd_opts.app) ? restart(cmd_opts.env, cmd_opts.app) : not_available(cmd, cmd_ops.app)
-when "environment"
+when "chefrun"
+  is_ey(cmd_opts.app) ? chefrun(cmd_opts.env, cmd_opts.app, cmd_opts.cmd) : not_available(cmd, cmd_ops.app)
+when "environments"
   puts "TheMelt (production)"
   puts "  Web: http://themelt.com"
   puts "  Mobile: http://m.themelt.com"
@@ -193,8 +210,10 @@ when "environment"
   puts "TheMelt (preview2)"
   puts "  Web: http://preview2.themelt.com"
   puts "  Mobile: http://previewmob2.themelt.com"
+  put  ""
   puts "Munchaway services (production)"
   puts "  http://admin.fishsixrc.com"
+  puts ""
   puts "Munchaway services (staging)"
   puts "  http://betadmin.fishsixrc.com"
 end
