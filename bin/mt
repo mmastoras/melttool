@@ -69,20 +69,36 @@ puts "Subcommand: #{cmd.inspect}"
 puts "Subcommand options: #{cmd_opts.inspect}"
 puts "Remaining arguments: #{ARGV.inspect}"
 =end
-
-def translate_env(env)
-  ey_env = case env
-    when "production"
-      "themelt_web_prod"
-    when "beta", "staging"
-      "themelt_web_staging"
-    when "preview"
-      "themelt_web_staging2"
-    when "preview2"
-      "themelt_web_staging3"
-    else
-      Trollop::die "Unknown environment #{env}"
-    end
+def translate_env(env,app)
+  
+  ey_env = ''
+  if app == "web" || app == "mobile"
+    ey_env = case env
+      when "production"
+        "themelt_web_prod"
+      when "beta", "staging"
+        "themelt_web_staging"
+      when "preview"
+        "themelt_web_staging2"
+      when "preview2"
+        "themelt_web_staging3"
+      else
+        Trollop::die "Unknown environment #{env}"
+      end
+  elsif app == "promo"
+     ey_env = case env
+       when "production"
+         "themelt_promo_service"
+       when "staging"
+         "themelt_promo_service_staging"
+       else
+         Trollop::die "Uknown environment #{env}"
+       end
+  else
+      Trollop::die "Uknown app #{app}"
+  end
+    
+#    puts "translate_env => #{ey_env}"
     ey_env
 end
 
@@ -92,6 +108,8 @@ def translate_app(env, app)
       env == 'production' ? "themelt_web" : "themelt_web_staging"
     when "mobile"
       env == 'production' ? "themelt_mobile" : "themelt_mobile_staging"
+    when "promo"
+      "themelt_promo_service"
     else
       Trollop::die "Unknown application #{app}"
     end
@@ -123,16 +141,16 @@ def ma_deploy(env,branch)
   end
 end
 
-def ey_ssh(env)
-  system "ey ssh -e #{translate_env(env)}"
+def ey_ssh(env,app)
+  system "ey ssh -e #{translate_env(env,app)}"
 end
 
 def ey_status(env, app) 
-  system "ey status -e #{translate_env(env)} -a #{translate_app(env, app)}"
+  system "ey status -e #{translate_env(env,app)} -a #{translate_app(env, app)}"
 end
 
 def ey_deploy(env, app, branch, migrate)
-  cmd = "ey deploy -e #{translate_env(env)} -a #{translate_app(env, app)} -r #{branch}"
+  cmd = "ey deploy -e #{translate_env(env,app)} -a #{translate_app(env, app)} -r #{branch}"
   cmd += " -m" if migrate == true
   if env == 'production'
     puts "About to deploy to branch #{branch} to production. Are you sure? (y/n)"
@@ -148,18 +166,18 @@ end
 def restart(env, app)
   case env
     when 'beta', 'staging', 'production'
-      system "ey ssh -e #{translate_env(env)} 'sudo /etc/init.d/nginx restart'" 
+      system "ey ssh -e #{translate_env(env,app)} 'sudo /etc/init.d/nginx restart'" 
       if env == 'production' #total hack to restart app2
         system "ssh deploy@ec2-50-18-83-188.us-west-1.compute.amazonaws.com 'sudo /etc/init.d/nginx restart'"
       end             
     when 'preview', 'preview2'
-      system "ey ssh -e #{translate_env(env)} 'LANG=\"en_US.UTF-8\" /engineyard/bin/app_#{translate_app(env, app)} deploy'"
+      system "ey ssh -e #{translate_env(env,app)} 'LANG=\"en_US.UTF-8\" /engineyard/bin/app_#{translate_app(env, app)} deploy'"
   end  
 end
 
 # clear cache and restart
 def reload(env, app)
-  system "ey ssh -e #{translate_env(env)} 'rm -rf /data/#{translate_app(env,app)}/current/tmp/cache/*'" # clear out cache
+  system "ey ssh -e #{translate_env(env,app)} 'rm -rf /data/#{translate_app(env,app)}/current/tmp/cache/*'" # clear out cache
   if env == 'production' # total hack to clear cache on app2
     system "ssh deploy@ec2-50-18-83-188.us-west-1.compute.amazonaws.com 'rm -rf /data/#{translate_app(env,app)}/current/tmp/cache/*'"
   end
@@ -169,9 +187,9 @@ end
 def chefrun(env, app, cmd)
   case cmd
     when 'upload'
-      system "ey recipes upload -e #{translate_env(env)}"
+      system "ey recipes upload -e #{translate_env(env,app)}"
     when 'apply'
-      system "ey recipes apply -e #{translate_env(env)}"
+      system "ey recipes apply -e #{translate_env(env,app)}"
   end
 end
 
@@ -183,7 +201,7 @@ case cmd
 when "-h"
   
 when "ssh"
-  is_ey(cmd_opts.app) ? ey_ssh(cmd_opts.env) : ma_ssh(cmd_opts.env, cmd_opts.instance)
+  is_ey(cmd_opts.app) ? ey_ssh(cmd_opts.env, cmd_opts.app) : ma_ssh(cmd_opts.env, cmd_opts.instance)
 when "status"
   is_ey(cmd_opts.app) ? ey_status(cmd_opts.env, cmd_opts.app) : ma_status
 when "deploy"
